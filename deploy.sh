@@ -36,8 +36,6 @@ install_pkg() {
 
 generate_service() {
   file=$1
-  rm "$file"
-
   if [ -f "$file" ]; then
     rm "$file"
     if [ $? -ne 0 ]; then
