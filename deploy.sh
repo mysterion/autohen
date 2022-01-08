@@ -1,34 +1,75 @@
-import os
+wd=$(cd `dirname $0` && pwd)
 
-from flask import Flask, render_template, request
-from sender import send
-app = Flask(__name__)
+main() {
+  check_python
+  install_pkg python3-pip
+  install_pkg python3-venv
+  start_depl
+}
 
+check_python() {
+  python3 --version > /dev/null
+  if [ $? -eq 0 ]; then
+    PYTHON=python3
+    return
+  fi
+  python --version > /dev/null
+  if [ $? -eq 0 ]; then
+    PYTHON=python
+    return
+  fi
+  echo "could not find python installation"
+  exit 1
+}
 
-@app.route('/')
-def index():
-    return render_template("index.html")
+install_pkg() {
+  pip_installed=`apt -qq list $1 | grep installed | wc -l`
+  if [ "$pip_installed" == "0" ]; then
+    echo "installing $1"
+    sudo apt install -y "$1"
+    if [ $? -ne 0 ]; then
+      echo "failed to install $1"
+      exit 1
+    fi
+  fi
+}
 
+generate_service() {
+  file=$1
+  rm "$file"
 
-@app.route("/log/<msg>")
-def log(msg):
-    send(request.remote_addr, 9020, "payload/goldhen_2.0b2_900.bin")
-    print(msg)
-    return "OK"
+  if [ -f "$file" ]; then
+    rm "$file"
+    if [ $? -ne 0 ]; then
+      echo "failed to remove $file"
+      exit 1
+    fi
+  fi
 
+  echo '[Unit]' >> "$file"
+  echo 'Description=ps4-exploit' >> $file
+  echo '[Service]' >> $file
+  echo "User=$USER" >> $file
+  echo "WorkingDirectory=$wd" >> $file
+  echo "ExecStart=/bin/bash -c '\"$wd/start.sh\"'" >> $file
+  echo "[Install]" >> $file
+  echo "WantedBy=multi-user.target" >> $file
+}
 
-@app.after_request
-def add_header(r):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also to cache the rendered page for 10 minutes.
-    """
-    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    r.headers["Pragma"] = "no-cache"
-    r.headers["Expires"] = "0"
-    r.headers['Cache-Control'] = 'public, max-age=0'
-    return r
+start_depl () {
+  cd $wd
+  if [ -d ./venv ]; then
+    rm -rf ./venv
+    if [ $? -ne 0 ]; then
+      echo "failed to remove $wd/venv dir"
+      exit 1
+    fi
+  fi
+  "$PYTHON" -m venv ./venv
+  source ./venv/bin/activate
+  pip install -r requirements.txt
+  chmod +x ./start.sh
+  generate_service ps4-exploit.service
+}
 
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1337)
+main
