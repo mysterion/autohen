@@ -46,6 +46,7 @@ generate_service() {
 
   echo '[Unit]' >> "$file"
   echo 'Description=ps4-exploit' >> $file
+  echo 'After=network.target' >> $file
   echo '[Service]' >> $file
   echo "User=$USER" >> $file
   echo "WorkingDirectory=$wd" >> $file
