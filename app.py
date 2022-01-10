@@ -2,8 +2,15 @@ import os
 
 from flask import Flask, render_template, request
 from sender import send
+import logging
+
 app = Flask(__name__)
 
+if __name__ != '__main__':
+    # if we are not running directly, we set the loggers
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 @app.route('/')
 def index():
@@ -12,8 +19,8 @@ def index():
 
 @app.route("/log/<msg>")
 def log(msg):
-    send(request.remote_addr, 9020, "payload/goldhen_2.0b2_900.bin")
-    print(msg)
+    app.logger.info(request)
+    send("", 9020, "payload/goldhen_2.0b2_900.bin")
     return "OK"
 
 
