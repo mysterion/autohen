@@ -1,8 +1,0 @@
-[Unit]
-Description=autohen
-After=network.target
-[Service]
-WorkingDirectory=/opt/autohen
-ExecStart=/bin/bash -c /opt/autohen/start.sh
-[Install]
-WantedBy=multi-user.target
